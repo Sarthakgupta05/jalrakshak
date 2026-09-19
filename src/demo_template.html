@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JalRakshak — live water-point failure risk</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#071A1C;--panel:#0C2A2C;--panel2:#103436;--ink:#EAF6F4;--dim:#8FB3B0;--line:#1B4446;
+--teal:#2DD4BF;--amber:#F5B841;--red:#F2545B;--green:#4ADE80}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 18px 60px}
+h1{font-size:30px;margin:0 0 4px;letter-spacing:-.4px}
+h2{font-size:19px;margin:0 0 14px}
+.sub{color:var(--dim);margin:0 0 22px;max-width:70ch}
+.tag{display:inline-block;background:var(--panel2);color:var(--teal);border:1px solid var(--line);
+padding:3px 10px;border-radius:99px;font-size:12px;margin:0 6px 10px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin:0 0 18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi b{display:block;font-size:26px;color:var(--teal);font-weight:700}
+.kpi span{font-size:12px;color:var(--dim)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:12px;color:var(--dim);margin:12px 0 3px}
+input[type=range]{width:100%;accent-color:var(--teal)}
+select{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+border-radius:8px;padding:7px}
+.val{float:right;color:var(--ink);font-variant-numeric:tabular-nums}
+.gauge{text-align:center;padding:6px 0 2px}
+.gauge .n{font-size:58px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.gauge .l{font-size:13px;color:var(--dim);margin-top:6px}
+.bar{height:10px;background:var(--panel2);border-radius:99px;overflow:hidden;margin:14px 0 4px}
+.bar i{display:block;height:100%;border-radius:99px;transition:width .25s}
+.why{margin-top:14px}
+.why div{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:5px 0;
+border-bottom:1px solid var(--line)}
+.why span:last-child{font-variant-numeric:tabular-nums}
+.up{color:var(--red)}.down{color:var(--green)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+td.n{text-align:right;font-variant-numeric:tabular-nums}
+.pol{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+.pol .nm{width:150px;color:var(--dim);flex:none}
+.pol .tr{flex:1;background:var(--panel2);border-radius:99px;height:20px;overflow:hidden}
+.pol .tr i{display:block;height:100%;background:var(--line);border-radius:99px}
+.pol.best .tr i{background:var(--teal)}
+.pol .vv{width:92px;text-align:right;font-variant-numeric:tabular-nums;flex:none}
+.note{font-size:12px;color:var(--dim);margin-top:12px}
+code{background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:12px}
+footer{color:var(--dim);font-size:12px;text-align:center;margin-top:30px}
+</style></head><body>
+<div class="wrap">
+<h1>JalRakshak</h1>
+<p class="sub">Predicting which rural water points will break down in the next 90 days — and deciding
+which ones a single maintenance crew should visit first. The model below is the real trained
+gradient-boosting ensemble, exported to JSON and running entirely in your browser. No server, no API key.</p>
+<span class="tag" id="tagTrees">300 trees</span><span class="tag" id="tagFeat">41 features</span>
+<span class="tag">runs offline</span>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="grid">
+  <div class="card">
+    <h2>1 · Score a water point</h2>
+    <div id="controls"></div>
+  </div>
+  <div class="card">
+    <h2>Predicted risk</h2>
+    <div class="gauge"><div class="n" id="risk">—</div><div class="l" id="verdict"></div></div>
+    <div class="bar"><i id="riskbar" style="width:0%"></i></div>
+    <div class="note">Probability this point suffers a service-stopping failure within 90 days.
+    Decision threshold <code id="thr"></code> is set by expected field cost, not by 0.5.</div>
+    <div class="why" id="why"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>2 · Allocate the crew</h2>
+  <p class="sub" style="margin:0 0 6px">A block has one crew and a fixed number of crew-days per quarter.
+  Every policy below spends the same budget on the same 240 water points. Only the ranking differs.</p>
+  <label>Crew-days available this quarter <span class="val" id="budgetv"></span></label>
+  <input type="range" id="budget" min="5" max="90" step="5" value="30">
+  <div id="policies" style="margin-top:14px"></div>
+  <div class="note">Person-days of water access protected, scored against the held-out ground truth
+  (a visit only counts if that point really was going to fail). Effectiveness of a preventive
+  visit is assumed to be 70%.</div>
+</div>
+
+<div class="card">
+  <h2>3 · This quarter's repair list</h2>
+  <div class="scroll"><table id="tbl"><thead><tr>
+  <th>#</th><th>ID</th><th>District</th><th>Type</th><th class="n">Risk</th>
+  <th class="n">People</th><th class="n">Crew-days</th><th class="n">Priority</th>
+  </tr></thead><tbody></tbody></table></div>
+</div>
+
+<footer>JalRakshak · open source · model and data regenerate from source with two commands</footer>
+</div>
+
+<script id="modeldata" type="application/json">__MODEL_JSON__</script>
+<script id="fleetdata" type="application/json">__FLEET_JSON__</script>
+<script id="metricdata" type="application/json">__METRICS_JSON__</script>
+<script>
+const M=JSON.parse(document.getElementById('modeldata').textContent);
+const FLEET=JSON.parse(document.getElementById('fleetdata').textContent);
+const MET=JSON.parse(document.getElementById('metricdata').textContent);
+const COL=M.columns, IDX={}; COL.forEach((c,i)=>IDX[c]=i);
+
+/* ---- feature engineering: mirrors src/features.py exactly ---- */
+function featureVector(r){
+  const v=new Float64Array(COL.length);
+  const put=(k,x)=>{ if(IDX[k]!==undefined) v[IDX[k]]=x; };
+  const clip=(x,a,b)=>Math.min(b,Math.max(a,x));
+  const num=["age_years","depth_m","static_water_level_m","gw_trend_m_per_year",
+    "rainfall_mm_12mo","population_served","duty_cycle","water_tds_ppm","iron_ppm",
+    "chloride_ppm","distance_to_workshop_km","road_access_score","days_since_service",
+    "has_tariff","caretaker_trained","failures_past_24mo","mean_repair_delay_days",
+    "uptime_pct_12mo","handle_effort_index"];
+  num.forEach(k=>put(k, r[k]!==undefined&&r[k]!==null ? +r[k] : M.medians[k]));
+  const depth=Math.max(1,+r.depth_m), swl=+r.static_water_level_m;
+  put("lift_head_ratio", clip(swl/depth,0,1.5));
+  put("stress_index", (+r.duty_cycle)*Math.sqrt(Math.max(0.5,swl)));
+  put("neglect_score", ((+r.days_since_service)/365)*(1+(+r.failures_past_24mo)));
+  put("corrosion_load", ((+r.water_tds_ppm)/1000)*(1+(+r.iron_ppm))*Math.log1p(+r.age_years));
+  put("isolation_penalty", (+r.distance_to_workshop_km)/Math.max(1,+r.road_access_score));
+  put("failures_per_year", (+r.failures_past_24mo)/2);
+  put("drawdown_5yr", swl+5*(+r.gw_trend_m_per_year));
+  put("pre_monsoon", [4,5,6].includes(+r.season_month)?1:0);
+  put("downtime_days_12mo", (100-(+r.uptime_pct_12mo))*3.65);
+  put("source_type_"+r.source_type,1); put("power_source_"+r.power_source,1);
+  put("management_"+r.management,1);
+  return v;
+}
+/* ---- ensemble inference: raw = init + lr * sum(leaf) ---- */
+function predict(r){
+  const x=featureVector(r); let s=0;
+  for(const t of M.trees){ let n=0;
+    while(t.l[n]!==-1) n = x[t.f[n]]<=t.t[n] ? t.l[n] : t.r[n];
+    s+=t.v[n]; }
+  return 1/(1+Math.exp(-(M.init+M.learning_rate*s)));
+}
+
+/* ---- headline KPIs ---- */
+const T=MET.test;
+document.getElementById('tagTrees').textContent=M.trees.length+" trees";
+document.getElementById('tagFeat').textContent=M.columns.length+" features";
+document.getElementById('thr').textContent="p ≥ "+M.threshold.toFixed(2);
+document.getElementById('kpis').innerHTML=[
+ [T.roc_auc.toFixed(3),"ROC-AUC (held out)"],
+ [T.pr_auc.toFixed(3),"PR-AUC vs "+(MET.dataset.positive_rate*100).toFixed(0)+"% base rate"],
+ [(T.recall*100).toFixed(0)+"%","failures caught"],
+ [T.lift_at_top20pct.toFixed(1)+"×","lift in top 20%"],
+ [T.brier.toFixed(3),"Brier score"],
+].map(([a,b])=>`<div class="kpi"><b>${a}</b><span>${b}</span></div>`).join("");
+
+/* ---- interactive scorer ---- */
+const BASE={district:"Barmer",source_type:"handpump_india_mk2",power_source:"handpump",
+ management:"gram_panchayat",age_years:11,depth_m:78,static_water_level_m:41,
+ gw_trend_m_per_year:1.0,rainfall_mm_12mo:320,population_served:640,duty_cycle:1.0,
+ water_tds_ppm:1500,iron_ppm:1.2,chloride_ppm:420,distance_to_workshop_km:38,
+ road_access_score:5,days_since_service:420,has_tariff:0,caretaker_trained:0,
+ failures_past_24mo:2,mean_repair_delay_days:16,uptime_pct_12mo:88,
+ handle_effort_index:6,season_month:5};
+const state={...BASE};
+const SLIDERS=[["age_years","Age (years)",0,34,0.5],["static_water_level_m","Static water level (m)",1,140,1],
+ ["gw_trend_m_per_year","Water-table fall (m/yr)",-0.5,3.4,0.1],["duty_cycle","Duty cycle (× design)",0.05,3,0.05],
+ ["days_since_service","Days since last service",3,1500,10],["failures_past_24mo","Breakdowns in last 24 mo",0,12,1],
+ ["distance_to_workshop_km","Distance to workshop (km)",0.5,145,1],["water_tds_ppm","Water TDS (ppm)",90,4200,20],
+ ["handle_effort_index","Handle effort index",0.5,10,0.1],["population_served","People served",12,4200,10]];
+const SELECTS=[["source_type","Source type",["handpump_india_mk2","handpump_mk3","submersible_borewell","piped_standpost","spring_box"]],
+ ["management","Management",["village_water_committee","gram_panchayat","private_operator","unmanaged"]],
+ ["has_tariff","Village collects a tariff",["0","1"]]];
+const LBL={age_years:"Age",static_water_level_m:"Water table depth",gw_trend_m_per_year:"Falling water table",
+ duty_cycle:"Over-use (duty cycle)",days_since_service:"Service gap",failures_past_24mo:"Breakdown history",
+ distance_to_workshop_km:"Remoteness",water_tds_ppm:"Water chemistry",handle_effort_index:"Handle effort",
+ population_served:"People served",has_tariff:"Tariff collected",management:"Management model",
+ source_type:"Source type"};
+
+const ctr=document.getElementById('controls');
+ctr.innerHTML = SELECTS.map(([k,l,o])=>
+  `<label>${l}</label><select data-k="${k}">${o.map(x=>`<option value="${x}"${state[k]==x?" selected":""}>${
+    k=="has_tariff"?(x=="1"?"Yes":"No"):x.replace(/_/g," ")}</option>`).join("")}</select>`).join("")
+ + SLIDERS.map(([k,l,a,b,s])=>
+  `<label>${l}<span class="val" id="v_${k}">${state[k]}</span></label>
+   <input type="range" data-k="${k}" min="${a}" max="${b}" step="${s}" value="${state[k]}">`).join("");
+
+ctr.addEventListener('input',e=>{
+  const k=e.target.dataset.k; if(!k) return;
+  state[k] = e.target.tagName=="SELECT" && isNaN(+e.target.value) ? e.target.value : +e.target.value;
+  if(e.target.tagName=="SELECT" && isNaN(+e.target.value)) state[k]=e.target.value;
+  if(k=="source_type") state.power_source =
+    state.source_type.startsWith("handpump") ? "handpump"
+    : state.source_type=="spring_box" ? "gravity" : "grid_electric";
+  const el=document.getElementById("v_"+k); if(el) el.textContent=state[k];
+  render();
+});
+
+function colorFor(p){ return p>=0.45?"var(--red)":p>=M.threshold?"var(--amber)":"var(--green)"; }
+function render(){
+  const p=predict(state);
+  const g=document.getElementById('risk');
+  g.textContent=(p*100).toFixed(1)+"%"; g.style.color=colorFor(p);
+  document.getElementById('verdict').textContent =
+    p>=0.45?"High risk — schedule now":p>=M.threshold?"Elevated — inspect this quarter":"Low risk — routine cycle";
+  const b=document.getElementById('riskbar');
+  b.style.width=Math.min(100,p*100)+"%"; b.style.background=colorFor(p);
+
+  // contribution = change in risk when this input is reset to its fleet median
+  const keys=["age_years","static_water_level_m","gw_trend_m_per_year","duty_cycle",
+    "days_since_service","failures_past_24mo","distance_to_workshop_km","water_tds_ppm",
+    "handle_effort_index","has_tariff"];
+  const rows=keys.map(k=>{
+    const alt={...state}; alt[k]=M.medians[k]!==undefined?M.medians[k]:BASE[k];
+    return [LBL[k]||k, p-predict(alt)];
+  }).sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).slice(0,5);
+  document.getElementById('why').innerHTML="<div><span style='color:var(--dim)'>Why this score</span>"+
+    "<span style='color:var(--dim)'>vs fleet median</span></div>"+
+    rows.map(([n,d])=>`<div><span>${n}</span><span class="${d>=0?'up':'down'}">${
+      d>=0?"+":""}${(d*100).toFixed(1)} pts</span></div>`).join("");
+}
+
+/* ---- triage simulator ---- */
+const EFF=0.70;
+FLEET.forEach(r=>{
+  r.risk=predict(r);
+  r.outage_days=Math.min(95,Math.max(5,r.mean_repair_delay_days*1.6+6));
+  r.crew_days=Math.max(0.15,(2*r.distance_to_workshop_km/26+3.5)/8);
+  r.benefit=r.risk*r.population_served*r.outage_days*EFF;
+  r.priority=r.benefit/r.crew_days;
+});
+function pick(list,budget){ let used=0; const out=[];
+  for(const r of list){ if(used+r.crew_days<=budget){ out.push(r); used+=r.crew_days; } } return out; }
+function saved(sel){ return sel.filter(r=>r.failure_next_90d==1)
+  .reduce((s,r)=>s+r.population_served*r.outage_days*EFF,0); }
+const POLICIES=[["Random","random"],["Oldest first","age_years"],
+  ["Most complaints","failures_past_24mo"],["Largest village","population_served"],
+  ["JalRakshak","priority"]];
+function triage(){
+  const budget=+document.getElementById('budget').value;
+  document.getElementById('budgetv').textContent=budget+" crew-days";
+  const res=POLICIES.map(([nm,key])=>{
+    const list = key=="random" ? FLEET.slice().sort((a,b)=>(a.waterpoint_id>b.waterpoint_id?1:-1))
+      : FLEET.slice().sort((a,b)=>b[key]-a[key]);
+    const sel=pick(list,budget);
+    return {nm,sel,val:saved(sel),hit:sel.length?sel.filter(r=>r.failure_next_90d==1).length/sel.length:0};
+  });
+  const mx=Math.max(...res.map(r=>r.val))||1;
+  document.getElementById('policies').innerHTML=res.map(r=>
+    `<div class="pol${r.nm=="JalRakshak"?" best":""}"><span class="nm">${r.nm}</span>
+     <span class="tr"><i style="width:${(r.val/mx*100).toFixed(1)}%"></i></span>
+     <span class="vv">${Math.round(r.val).toLocaleString()}</span></div>`).join("")
+    +`<div class="note">JalRakshak protects <b style="color:var(--teal)">${
+      (res[4].val/Math.max(1,Math.max(...res.slice(0,4).map(r=>r.val)))).toFixed(2)}×</b>
+      the water access of the best heuristic, with a ${(res[4].hit*100).toFixed(0)}% hit rate
+      against a ${(MET.dataset.positive_rate*100).toFixed(0)}% base rate.</div>`;
+  const top=res[4].sel.slice(0,12);
+  document.querySelector('#tbl tbody').innerHTML=top.map((r,i)=>
+    `<tr><td>${i+1}</td><td>${r.waterpoint_id}</td><td>${r.district}</td>
+     <td>${r.source_type.replace(/_/g," ")}</td>
+     <td class="n" style="color:${colorFor(r.risk)}">${(r.risk*100).toFixed(0)}%</td>
+     <td class="n">${r.population_served}</td><td class="n">${r.crew_days.toFixed(2)}</td>
+     <td class="n">${Math.round(r.priority).toLocaleString()}</td></tr>`).join("");
+}
+document.getElementById('budget').addEventListener('input',triage);
+render(); triage();
+</script></body></html>

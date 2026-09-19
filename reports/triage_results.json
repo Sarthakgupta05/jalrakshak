@@ -1,0 +1,47 @@
+{
+  "crew_day_budget": 120.0,
+  "candidate_pool": 1500,
+  "policies": {
+    "random": {
+      "points_visited": 194,
+      "crew_days_used": 119.7,
+      "true_failures_caught": 33,
+      "hit_rate": 0.1701,
+      "person_days_of_water_protected": 96007,
+      "vs_random_multiple": 1.0
+    },
+    "oldest_first": {
+      "points_visited": 185,
+      "crew_days_used": 120.0,
+      "true_failures_caught": 96,
+      "hit_rate": 0.5189,
+      "person_days_of_water_protected": 241193,
+      "vs_random_multiple": 2.51
+    },
+    "most_complaints": {
+      "points_visited": 185,
+      "crew_days_used": 119.8,
+      "true_failures_caught": 105,
+      "hit_rate": 0.5676,
+      "person_days_of_water_protected": 253837,
+      "vs_random_multiple": 2.64
+    },
+    "largest_village": {
+      "points_visited": 191,
+      "crew_days_used": 119.6,
+      "true_failures_caught": 59,
+      "hit_rate": 0.3089,
+      "person_days_of_water_protected": 318308,
+      "vs_random_multiple": 3.32
+    },
+    "jalrakshak": {
+      "points_visited": 177,
+      "crew_days_used": 119.8,
+      "true_failures_caught": 121,
+      "hit_rate": 0.6836,
+      "person_days_of_water_protected": 494915,
+      "vs_random_multiple": 5.15
+    }
+  },
+  "uplift_vs_best_heuristic_pct": 55.5
+}

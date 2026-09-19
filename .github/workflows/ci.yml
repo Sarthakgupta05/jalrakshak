@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push: { branches: [main] }
+  pull_request: { branches: [main] }
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Rebuild everything from source
+        run: |
+          python src/generate_data.py --n 12000 --out data/waterpoints.csv
+          python src/train.py
+          python src/triage.py --budget 120
+          python src/export_model_js.py
+          python src/build_demo.py
+      - name: Python tests
+        run: pytest -q tests/test_pipeline.py
+      - name: Browser/Python parity test
+        run: node tests/test_demo_parity.js

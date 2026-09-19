@@ -1,0 +1,160 @@
+{
+  "dataset": {
+    "rows": 12000,
+    "features": 41,
+    "positive_rate": 0.17925
+  },
+  "comparison": {
+    "logistic_regression": {
+      "roc_auc": 0.9071101404792823,
+      "pr_auc": 0.7488887764975006,
+      "brier": 0.1244239932566742
+    },
+    "random_forest": {
+      "roc_auc": 0.8884783378585763,
+      "pr_auc": 0.704106495991908,
+      "brier": 0.09028401026581669
+    },
+    "hist_gradient_boosting": {
+      "roc_auc": 0.8870652815488136,
+      "pr_auc": 0.7075341228896345,
+      "brier": 0.08933328581675112
+    },
+    "gradient_boosting": {
+      "roc_auc": 0.9010530043678432,
+      "pr_auc": 0.7412481908986871,
+      "brier": 0.08276249983775914
+    }
+  },
+  "selected_model": "gradient_boosting",
+  "cv_pr_auc_mean": 0.6921996941454183,
+  "cv_pr_auc_std": 0.017117856529608004,
+  "test": {
+    "roc_auc": 0.9010530043678432,
+    "pr_auc": 0.7412481908986871,
+    "brier": 0.08276249983775914,
+    "threshold": 0.11263157894736842,
+    "accuracy": 0.7766666666666666,
+    "precision": 0.4387990762124711,
+    "recall": 0.8837209302325582,
+    "f1": 0.5864197530864198,
+    "confusion_matrix": {
+      "tn": 1484,
+      "fp": 486,
+      "fn": 50,
+      "tp": 380
+    },
+    "lift_at_top20pct": 3.4767441860465116,
+    "downtime_days_avoided_vs_reactive": 2554.0,
+    "downtime_reduction_pct": 74.24418604651163
+  },
+  "selection_shortlist": [
+    "logistic_regression",
+    "gradient_boosting"
+  ],
+  "top_features": [
+    {
+      "feature": "age_years",
+      "importance": 0.10914464510966043
+    },
+    {
+      "feature": "handle_effort_index",
+      "importance": 0.040617286308264555
+    },
+    {
+      "feature": "stress_index",
+      "importance": 0.02993604730305298
+    },
+    {
+      "feature": "duty_cycle",
+      "importance": 0.027796521019980022
+    },
+    {
+      "feature": "lift_head_ratio",
+      "importance": 0.025215117428515108
+    },
+    {
+      "feature": "drawdown_5yr",
+      "importance": 0.023207457024258235
+    },
+    {
+      "feature": "has_tariff",
+      "importance": 0.013706301540991242
+    },
+    {
+      "feature": "failures_past_24mo",
+      "importance": 0.01240816674051301
+    },
+    {
+      "feature": "days_since_service",
+      "importance": 0.010601483856079758
+    },
+    {
+      "feature": "gw_trend_m_per_year",
+      "importance": 0.009417301933063865
+    },
+    {
+      "feature": "failures_per_year",
+      "importance": 0.008214118021629857
+    },
+    {
+      "feature": "corrosion_load",
+      "importance": 0.007657652582825969
+    },
+    {
+      "feature": "power_source_handpump",
+      "importance": 0.007242434442092868
+    },
+    {
+      "feature": "depth_m",
+      "importance": 0.006830944623700624
+    },
+    {
+      "feature": "isolation_penalty",
+      "importance": 0.006528033783337134
+    }
+  ],
+  "columns": [
+    "age_years",
+    "depth_m",
+    "static_water_level_m",
+    "gw_trend_m_per_year",
+    "rainfall_mm_12mo",
+    "population_served",
+    "duty_cycle",
+    "water_tds_ppm",
+    "iron_ppm",
+    "chloride_ppm",
+    "distance_to_workshop_km",
+    "road_access_score",
+    "days_since_service",
+    "has_tariff",
+    "caretaker_trained",
+    "failures_past_24mo",
+    "mean_repair_delay_days",
+    "uptime_pct_12mo",
+    "handle_effort_index",
+    "lift_head_ratio",
+    "stress_index",
+    "neglect_score",
+    "corrosion_load",
+    "isolation_penalty",
+    "failures_per_year",
+    "drawdown_5yr",
+    "pre_monsoon",
+    "downtime_days_12mo",
+    "source_type_handpump_india_mk2",
+    "source_type_handpump_mk3",
+    "source_type_piped_standpost",
+    "source_type_spring_box",
+    "source_type_submersible_borewell",
+    "power_source_gravity",
+    "power_source_grid_electric",
+    "power_source_handpump",
+    "power_source_solar_pv",
+    "management_gram_panchayat",
+    "management_private_operator",
+    "management_unmanaged",
+    "management_village_water_committee"
+  ]
+}
